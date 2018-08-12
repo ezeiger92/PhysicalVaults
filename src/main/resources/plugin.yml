@@ -1,0 +1,21 @@
+name: PhysicalVaults
+main: com.chromaclypse.vaults.VaultsMain
+version: ${project.version}
+description: Area container protection and access
+author: ezeiger92
+api-version: 1.13
+depend: [ChromaLib, Vault]
+softdepend: []
+commands:
+  phvault:
+    description: Root Vaults command
+    usage: /<command> ...
+    permission: phvault.create
+    aliases: [phv]
+permissions:
+  phvault.bypass:
+    description: Access any vault
+    default: op
+  phvault.create:
+    description: Create new keycards and vaults
+    default: op

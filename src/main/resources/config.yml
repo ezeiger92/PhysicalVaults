@@ -1,0 +1,24 @@
+# PhysicalVaults config
+general:
+  max_dimension: 15
+
+rental:
+  period: 1w
+  upkeep_ratio: 0.2
+  archive_cost: 0.0
+
+keycards:
+  base_cost: 0.0
+  vault_cost_ratio: 0.002
+  
+  guest_keycards:
+    default:
+      label: 1-day pass
+      period: 1d
+      keycard_cost_ratio: 0.1
+
+vault_types:
+  default:
+    cost: 0.0
+    allow_rentals: true
+    door_material: IRON_BLOCK
