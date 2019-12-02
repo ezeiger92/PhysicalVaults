@@ -38,20 +38,23 @@ public class AccessControl implements Listener {
 			return true;
 		}
 		
+		VaultData data = handle.getVaultData(vault);
+		
+		if(data == null) {
+			return false;
+		}
+		
 		for(ItemStack is : player.getInventory().getStorageContents()) {
 			if(is != null) {
-				Keycard keycard = KeycardFactory.getKeycard(is);
+				Keycard keycard = handle.getKeyMaster().GetKeycard(is);
 				
-				if(keycard != null && vault.equals(keycard.getVault())) {
-					VaultData data = handle.getVaultData(vault);
-					
-					if(data != null &&
-							data.keycard_registered_at <= keycard.getCreated() &&
+				if(keycard != null) {
+					if(vault.equals(keycard.getVault()) && data.keycard_registered_at <= keycard.getCreated() &&
 							!keycard.hasExpired()) {
 						return true;
 					}
 					else {
-						KeycardFactory.invalidate(is);
+						handle.getKeyMaster().updateKeycard(is, null);
 					}
 				}
 			}
@@ -161,11 +164,11 @@ public class AccessControl implements Listener {
 			if(event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
 				UUID clickedVault = handle.getVaultAt(event.getPlayer().getLocation());
 				
-				if(clickedVault == null) {
+				if(clickedVault != null) {
 					return;
 				}
 				
-				Keycard keycard = KeycardFactory.getKeycard(event.getPlayer().getInventory().getItemInMainHand());
+				Keycard keycard = handle.getKeyMaster().GetKeycard(event.getPlayer().getInventory().getItemInMainHand());
 				
 				if(keycard == null) {
 					return;
@@ -175,9 +178,12 @@ public class AccessControl implements Listener {
 				
 				if(data != null) {
 					Location to = new Location(Bukkit.getWorld(data.world_name),
-							data.force_exit.x + 0.5, data.force_exit.y + 0.5, data.force_exit.z + 0.5);
+							data.force_exit.x + 0.5, data.force_exit.y + 1.5, data.force_exit.z + 0.5);
 					
-					handle.effects().makePathFor(event.getPlayer().getLocation(), to, event.getPlayer());
+					Location from = event.getPlayer().getEyeLocation();
+					from.add(from.getDirection().multiply(1.5));
+					
+					handle.effects().makePathFor(from, to, event.getPlayer());
 				}
 			}
 		}

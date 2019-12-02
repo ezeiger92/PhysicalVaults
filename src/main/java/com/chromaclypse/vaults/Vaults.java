@@ -15,6 +15,7 @@ import org.bukkit.plugin.Plugin;
 
 import com.chromaclypse.api.Log;
 import com.chromaclypse.api.collision.BlockAabb;
+import com.chromaclypse.api.collision.CollisionData;
 import com.chromaclypse.api.geometry.DynamicAabbTree;
 import com.chromaclypse.vaults.data.VaultArchive;
 import com.chromaclypse.vaults.data.VaultConfig;
@@ -184,7 +185,7 @@ public class Vaults {
 	}
 	
 	public UUID getVaultAt(Location location) {
-		List<Object> objects = getTree(location.getWorld()).queryPoint(location);
+		List<CollisionData> objects = getTree(location.getWorld()).queryPoint(location);
 		
 		if(objects.isEmpty()) {
 			return null;
@@ -193,7 +194,7 @@ public class Vaults {
 			// WARN
 		}
 		
-		return (UUID) objects.get(0);
+		return (UUID) objects.get(0).data;
 	}
 	
 	public VaultData getVaultData(UUID vault) {
@@ -321,9 +322,5 @@ public class Vaults {
 		}
 		
 		return time + temp;
-	}
-	
-	public static long currentTime() {
-		return System.currentTimeMillis() / 1000;
 	}
 }

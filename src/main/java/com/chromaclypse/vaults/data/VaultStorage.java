@@ -11,7 +11,7 @@ public class VaultStorage extends ConfigObject {
 
 	public long last_upkeep = 0;
 	
-	public Map<String, VaultData> vaults = Defaults.EmptyMap();
+	public Map<String, VaultData> vaults = Defaults.emptyMap();
 	
 	public static class VaultData {
 		public String vault_type = "";
@@ -21,6 +21,7 @@ public class VaultStorage extends ConfigObject {
 		public Point force_exit = new Point();
 		public String owner_uuid = "";
 		public boolean is_rental = true;
+		public boolean autopay = false;
 		public long first_payed_at = 0;
 		public long last_payed_at = 0;
 		public long keycard_registered_at = 0;

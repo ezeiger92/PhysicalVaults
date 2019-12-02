@@ -1,117 +1,44 @@
 package com.chromaclypse.vaults;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.UUID;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.enchantments.Enchantment;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.plugin.java.JavaPlugin;
 
+import com.chromaclypse.api.annotation.Nullable;
 import com.chromaclypse.api.item.ItemBuilder;
-import com.chromaclypse.api.messages.Text;
 import com.chromaclypse.vaults.data.VaultConfig.KeycardConfig.AccessCardInfo;
 import com.chromaclypse.vaults.data.VaultStorage.VaultData;
 
 public class KeycardFactory {
-	private Vaults handle;
+	private final NamespacedKey KEYCARD_DATA = new NamespacedKey(JavaPlugin.getPlugin(VaultsMain.class), "keycard");
+	private final Keycard.Serializer SERIALIZER = new Keycard.Serializer();
+	private final Vaults handle;
+	private final SimpleDateFormat format = new SimpleDateFormat("mm/dd/yyyy");
 	
 	public KeycardFactory(Vaults handle) {
 		this.handle = handle;
 	}
 	
-	private static void encodeLongTo(StringBuilder output, long input) {
-		long power = 1;
-		long temp = input;
-		
-		while(temp >= 10) {
-			power *= 10;
-			temp /= 10;
+	public Keycard GetKeycard(ItemStack keycard) {
+		if(keycard == null || keycard.getType() == Material.AIR) {
+			return null;
 		}
 		
-		while(power > 0) {
-			output.append('&').append((input / power) % 10);
-			power /= 10;
-		}
+		ItemMeta meta = keycard.getItemMeta();
+		
+		return meta.getPersistentDataContainer().get(KEYCARD_DATA, SERIALIZER);
 	}
 	
-	private static String createKeycardMeta(UUID vault, long created, long expiry) {
-		StringBuilder result = new StringBuilder();
-		for(char c : vault.toString().toLowerCase().toCharArray()) {
-			result.append('&').append(c);
-		}
-		
-		result.append("&r");
-		encodeLongTo(result, created);
-		
-		if(expiry >= 0) {
-			result.append("&r");
-			encodeLongTo(result, expiry);
-		}
-		
-		String str = result.toString().replace('-', 'm');
-
-		return str;
-	}
-	
-	private static String[] metaParts(ItemStack keycard) {
-		if(keycard.hasItemMeta()) {
-			ItemMeta meta = keycard.getItemMeta();
-			
-			if(meta.hasLore()) {
-				String encodedSeparator = Text.colorize("&r");
-				String[] parts = meta.getLore().get(0).split(encodedSeparator);
-				
-				if(parts.length == 2 || parts.length == 3) {
-					return parts;
-				}
-			}
-		}
-		
-		return new String[0];
-	}
-	
-	public static Keycard getKeycard(ItemStack keycard) {
-		String[] metaParts = metaParts(keycard);
-		
-		if(metaParts.length >= 2) {
-			UUID vault;
-			long created;
-			
-			try {
-				vault = UUID.fromString(metaParts[0].replace(String.valueOf(ChatColor.COLOR_CHAR), "")
-						.replace('m', '-'));
-				created = Long.parseLong(metaParts[1].replace(String.valueOf(ChatColor.COLOR_CHAR), ""));
-			}
-			catch(IllegalArgumentException e) {
-				e.printStackTrace();
-				return null;
-			}
-			
-			if(metaParts.length >= 3) {
-				long expiry;
-				try {
-					expiry = Long.parseLong(metaParts[2].replace(String.valueOf(ChatColor.COLOR_CHAR), ""));
-				}
-				catch(IllegalArgumentException e) {
-					return null;
-				}
-				
-				return new Keycard(vault, created, expiry);
-			}
-			else {
-				return new Keycard(vault, created);
-			}
-		}
-		
-		return null;
-	}
-	
-	public static void invalidate(ItemStack keycard) {
-		ItemBuilder.edit(keycard).lore("&4&l&o-VOID-");
-	}
-	
-	public static UUID getVaultAccess(ItemStack keycard) {
-		Keycard card = getKeycard(keycard);
+	public UUID getVaultAccess(ItemStack keycard) {
+		Keycard card = GetKeycard(keycard);
 		
 		if(card != null) {
 			return card.getVault();
@@ -124,12 +51,13 @@ public class KeycardFactory {
 		AccessCardInfo info = handle.getConfig().keycards.guest_keycards.get(type);
 		
 		if(info != null) {
-			long created = Vaults.currentTime();
+			long created = System.currentTimeMillis();
+			Keycard card = new Keycard(vault, created, created + Vaults.makeTime(info.period));
+			ItemStack result = new ItemStack(Material.NAME_TAG);
 			
-			return new ItemBuilder(Material.PAPER)
-					.display("&6" + info.label)
-					.lore(createKeycardMeta(vault, created, Vaults.makeTime(info.period)))
-					.get();
+			updateKeycard(result, card);
+			
+			return result;
 		}
 		
 		return null;
@@ -139,17 +67,55 @@ public class KeycardFactory {
 		VaultData data = handle.getStorage().vaults.get(vault.toString());
 		
 		if(data != null) {
-			long created = Vaults.currentTime();
+			long created = System.currentTimeMillis();
+			Keycard card = new Keycard(vault, created);
+			ItemStack result = new ItemStack(Material.NAME_TAG);
+			
+			updateKeycard(result, card, data);
 			
 			data.keycard_registered_at = created;
 			handle.informUpdate();
 			
-			return new ItemBuilder(Material.PAPER)
-					.display("&6Keycard")
-					.lore(createKeycardMeta(vault, created, -1))
-					.get();
+			return result;
 		}
 		
 		return null;
+	}
+	
+	public void updateKeycard(ItemStack stack, @Nullable Keycard card) {
+		updateKeycard(stack, card, card != null ? handle.getStorage().vaults.get(card.getVault().toString()) : null);
+	}
+	
+	private void updateKeycard(ItemStack stack, @Nullable Keycard card, VaultData data) {
+		if(stack == null || stack.getType() == Material.AIR) {
+			return;
+		}
+		
+		if(card == null) {
+			ItemBuilder.edit(stack).lore(" &7&l-VOID-");
+			if(stack.hasItemMeta()) {
+				ItemMeta meta = stack.getItemMeta();
+				meta.getPersistentDataContainer().remove(KEYCARD_DATA);
+				stack.setItemMeta(meta);
+			}
+			return;
+		}
+		
+		String lore = " &7Vault: &f" + data.vault_type + "\\n &7Access: &f";
+		
+		if(card.isGuestCard()) {
+			lore += "Temporary\\n &7Expires: &f" + format.format(new Date(card.getExpiry()));
+		}
+		else lore += "Permanent";
+		
+		ItemBuilder.edit(stack)
+			.display("&dVault Keycard")
+			.wrapLore(lore)
+			.forceEnchant(Enchantment.DURABILITY, 1)
+			.flag(ItemFlag.HIDE_ENCHANTS);
+		
+		ItemMeta meta = stack.getItemMeta();
+		meta.getPersistentDataContainer().set(KEYCARD_DATA, SERIALIZER, card);
+		stack.setItemMeta(meta);
 	}
 }

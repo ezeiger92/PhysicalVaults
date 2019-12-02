@@ -12,10 +12,11 @@ import com.chromaclypse.api.config.Section;
 @Section(path="archive_items.yml")
 public class VaultArchive extends ConfigObject {
 
-	public Map<String, ArchiveData> archive = Defaults.EmptyMap();
+	public Map<String, ArchiveData> archive = Defaults.emptyMap();
 	
 	public static class ArchiveData {
+		public String owner = "";
 		public long archived_at = 0;
-		public List<ItemStack> contents = Defaults.EmptyList();
+		public List<ItemStack> contents = Defaults.emptyList();
 	}
 }

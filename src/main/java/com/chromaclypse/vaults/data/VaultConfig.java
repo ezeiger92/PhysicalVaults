@@ -26,7 +26,7 @@ public class VaultConfig extends ConfigObject {
 		public double base_cost = 0.0;
 		public double vault_cost_ratio = 0.002;
 		
-		public Map<String, AccessCardInfo> guest_keycards = Defaults.EmptyMap();
+		public Map<String, AccessCardInfo> guest_keycards = Defaults.emptyMap();
 		
 		public static class AccessCardInfo {
 			public String label = "1-day pass";
@@ -35,7 +35,7 @@ public class VaultConfig extends ConfigObject {
 		}
 	}
 	
-	public Map<String, VaultInfo> vault_types = Defaults.EmptyMap();
+	public Map<String, VaultInfo> vault_types = Defaults.emptyMap();
 	
 	public static class VaultInfo {
 		public double cost = 0.0;
