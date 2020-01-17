@@ -1,5 +1,7 @@
 package com.chromaclypse.vaults;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import org.bukkit.Material;
@@ -47,6 +49,18 @@ public class VaultCommands {
 	
 	public VaultCommands(Vaults handle) {
 		this.handle = handle;
+	}
+	
+	public List<String> vaultTypes(Context create) {
+		return new ArrayList<>(handle.getConfig().vault_types.keySet());
+	}
+	
+	public List<String> validVaults(Context create) {
+		return new ArrayList<>(handle.getStorage().vaults.keySet());
+	}
+	
+	public List<String> passTypes(Context create) {
+		return new ArrayList<>(handle.getConfig().keycards.guest_keycards.keySet());
 	}
 
 	public boolean create(Context command) {
